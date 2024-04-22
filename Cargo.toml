@@ -1,0 +1,12 @@
+[package]
+name = "repoblame"
+version = "0.0.1"
+edition = "2021"
+
+
+[dependencies]
+bytelines = "2.5.0"
+clap = { version = "4.5.4", features = ["derive"] }
+# git2 = "0.18.3"
+tabled = "0.15.0"
+thousands = "0.2.0"
