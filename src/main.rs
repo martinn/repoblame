@@ -7,11 +7,11 @@ mod git;
 mod stats;
 mod table;
 
-/// Aggregate git blame stats for a whole repo.
+/// Aggregate git blame stats across any git repository.
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct RepoBlameArgs {
-    /// Path to the git repository (default: current directory)
+    /// Path to a git repository folder (specify a non-root folder if wanting to analyze a subfolder only).
     #[arg(short, long)]
     path: Option<std::path::PathBuf>,
 }
