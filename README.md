@@ -57,9 +57,9 @@ Cropped output of `repoblame` on the [django](https://github.com/django/django) 
 - [x] Show authors top file types (file extension) by LoC
 - [x] Support for `.git-blame-ignore-revs` (to ignore particular commits like formatting commits)
 - [x] Support analyzing a subfolder of a repo only
+- [x] Exclude binary files by default (and option to include them back in)
 - [x] Option to exclude files by file type
 - [ ] Automated tests
-- [ ] Option to exclude binary files
 - [ ] Option to exclude specific file paths
 - [ ] CI/CD and release packaging
 - [ ] Progress report

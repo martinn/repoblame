@@ -1,4 +1,6 @@
 use clap::Parser;
+use std::fs::File;
+use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
@@ -15,7 +17,12 @@ struct RepoBlameArgs {
     #[arg(short, long)]
     path: Option<std::path::PathBuf>,
 
+    /// Include binary files in the blame stats (excluded by default)
+    #[arg(long, default_value_t = false, action = clap::ArgAction::SetTrue)]
+    include_binary: bool,
+
     /// Optional list of file extension(s) to exclude from the blame stats.
+    /// Example: --exclude-by-extension md txt
     #[arg(short, long, num_args(1..))]
     exclude_by_extension: Option<Vec<String>>,
 }
@@ -24,6 +31,8 @@ fn main() {
     let args = RepoBlameArgs::parse();
 
     let binding = args.path.unwrap_or(PathBuf::from("."));
+    let exclude_binary = !args.include_binary;
+
     let exclude_by_type = args.exclude_by_extension.unwrap_or_default();
     let repo_path = binding.as_path();
 
@@ -35,17 +44,26 @@ fn main() {
         print!("\r {}", file_path);
         std::io::stdout().flush().unwrap();
 
-        // TODO: Use file_format detection instead?
-        // TODO: Skip binary files by default?
         let file_path = Path::new(&file_path);
         let file_extension = file_path.extension().and_then(|ext| ext.to_str());
 
-        if exclude_by_type.contains(&file_extension.unwrap_or_default().to_string()) {
+        if exclude_binary {
+            let mut full_path = PathBuf::from(repo_path);
+            full_path.push(file_path);
+            match is_binary_file(full_path.as_path()) {
+                Ok(true) => return,
+                Ok(false) => (),
+                Err(..) => (),
+            }
+        }
+
+        if !exclude_by_type.is_empty()
+            && exclude_by_type.contains(&file_extension.unwrap_or_default().to_string())
+        {
             return;
         }
 
         let mut git_blame = git::GitBlame::new(repo_path, file_path);
-
         git_blame
             .iter()
             .filter_map(|line| parse_email(&line))
@@ -65,6 +83,14 @@ fn main() {
         &sorted_file_types_by_author,
     );
     println!("{}", table);
+}
+
+fn is_binary_file(file_path: &Path) -> Result<bool, std::io::Error> {
+    let file = File::open(file_path)?;
+    let mut buffer: Vec<u8> = vec![];
+    file.take(1024_u64).read_to_end(&mut buffer)?;
+
+    Ok(content_inspector::inspect(&buffer).is_binary())
 }
 
 fn parse_email(line: &str) -> Option<String> {
