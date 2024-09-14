@@ -57,14 +57,14 @@ Cropped output of `repoblame` on the [django](https://github.com/django/django) 
 - [x] Show authors top file types (file extension) by LoC
 - [x] Support for `.git-blame-ignore-revs` (to ignore particular commits like formatting commits)
 - [x] Support analyzing a subfolder of a repo only
+- [x] Option to exclude files by file type
 - [ ] Automated tests
-- [ ] Option to filter binary files 
-- [ ] Option to filter specific file paths or file types 
+- [ ] Option to exclude binary files
+- [ ] Option to exclude specific file paths
 - [ ] CI/CD and release packaging
-- [ ] Progress report 
+- [ ] Progress report
 - [ ] Concurrency and other performance optimizations (`git blame` on a big repo with lots of commits can get slow)
 - [ ] Use `git2-rs` instead of `git` CLI (The initial version used `git2-rs` but performance was an order of magnitude worse for some reason)
-
 
 ## How to run it
 
@@ -97,11 +97,10 @@ Options:
   -V, --version      Print version
 ```
 
-
 ## Disclaimer
 
 I made this tool as a project for learning rust.
 
-It's intended solely for providing information out of curiosity and should not be relied upon for any other purposes. Due to various factors, such as repository configurations and working methodologies, results may be significantly inaccurate for a lot of repositories.
+It's intended solely for providing information out of curiosity and should not be relied upon for any other purposes. Due to various factors, results are not a reliable indicator of actual top contributors to any project.
 
 The stats provided are also devoid of any historical context; they reflect data at a specific point in time only.

@@ -14,12 +14,17 @@ struct RepoBlameArgs {
     /// Path to a git repository folder (specify a non-root folder if wanting to analyze a subfolder only).
     #[arg(short, long)]
     path: Option<std::path::PathBuf>,
+
+    /// Optional list of file extension(s) to exclude from the blame stats.
+    #[arg(short, long, num_args(1..))]
+    exclude_by_extension: Option<Vec<String>>,
 }
 
 fn main() {
     let args = RepoBlameArgs::parse();
 
     let binding = args.path.unwrap_or(PathBuf::from("."));
+    let exclude_by_type = args.exclude_by_extension.unwrap_or_default();
     let repo_path = binding.as_path();
 
     let mut repo_stats = stats::RepoStats::new();
@@ -31,9 +36,14 @@ fn main() {
         std::io::stdout().flush().unwrap();
 
         // TODO: Use file_format detection instead?
-        // TODO: Skip binary and other non-text files?
+        // TODO: Skip binary files by default?
         let file_path = Path::new(&file_path);
         let file_extension = file_path.extension().and_then(|ext| ext.to_str());
+
+        if exclude_by_type.contains(&file_extension.unwrap_or_default().to_string()) {
+            return;
+        }
+
         let mut git_blame = git::GitBlame::new(repo_path, file_path);
 
         git_blame
