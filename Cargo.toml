@@ -11,3 +11,6 @@ content_inspector = "0.2.4"
 # git2 = "0.18.3"
 tabled = "0.15.0"
 thousands = "0.2.0"
+
+[profile.release]
+lto = "thin"
