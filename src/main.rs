@@ -8,6 +8,7 @@ use std::path::PathBuf;
 mod git;
 mod stats;
 mod table;
+use crossterm::{terminal::Clear, terminal::ClearType};
 
 /// Aggregate git blame stats across any git repository.
 #[derive(Parser)]
@@ -40,7 +41,8 @@ fn main() {
     let mut git_tree = git::GitTree::new(repo_path);
 
     git_tree.iter().for_each(|file_path| {
-        // TODO: Fix overlap
+        // Clear and print the current file being processed
+        print!("\r{}", Clear(ClearType::CurrentLine));
         print!("\r {}", file_path);
         std::io::stdout().flush().unwrap();
 
@@ -71,7 +73,9 @@ fn main() {
                 repo_stats.increment_lines(&author_email, file_extension);
             });
     });
-    println!("\r");
+
+    // Clear the status after processing all files
+    print!("\r{}", Clear(ClearType::CurrentLine));
 
     let sorted_authors = repo_stats.sorted_authors();
     let sorted_file_types_by_author = repo_stats.sorted_file_types_by_author();
