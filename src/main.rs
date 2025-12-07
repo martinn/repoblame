@@ -1,19 +1,22 @@
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::{Path, PathBuf},
+};
+
 use clap::Parser;
-use std::fs::File;
-use std::io::Read;
-use std::io::Write;
-use std::path::Path;
-use std::path::PathBuf;
+use tabled::{settings::Style, Table};
 
 mod git;
+mod output;
 mod stats;
-mod table;
 
 /// Aggregate git blame stats across any git repository.
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct RepoBlameArgs {
-    /// Path to a git repository folder (specify a non-root folder if wanting to analyze a subfolder only).
+    /// Path to a git repository folder (specify a non-root folder if wanting to analyze a
+    /// subfolder only).
     #[arg(short, long)]
     path: Option<std::path::PathBuf>,
 
@@ -25,9 +28,27 @@ struct RepoBlameArgs {
     /// Example: --exclude-by-extension md txt
     #[arg(short, long, num_args(1..))]
     exclude_by_extension: Option<Vec<String>>,
+
+    #[arg(short, long, value_enum, default_value_t)]
+    format: OutputFormat,
+}
+
+#[derive(clap::ValueEnum, Default, Clone)]
+enum OutputFormat {
+    /// Whitespace-delimited table
+    Plain,
+    /// Table with lines delimiting rows, columns, and headers
+    #[default]
+    Table,
+    /// Pretty-printed JSON
+    Json,
 }
 
 fn main() {
+    // Handle SIGPIPE
+    // https://stackoverflow.com/questions/65755853/simple-word-count-rust-program-outputs-valid-stdout-but-panicks-when-piped-to-he/65760807
+    sigpipe::reset();
+
     let args = RepoBlameArgs::parse();
 
     let binding = args.path.unwrap_or(PathBuf::from("."));
@@ -41,8 +62,8 @@ fn main() {
 
     git_tree.iter().for_each(|file_path| {
         // Clear and print the current file being processed
-        print!("\r\x1B[2K");
-        print!("\r {}", file_path);
+        eprint!("\r\x1B[2K");
+        eprint!("\r {}", file_path);
         std::io::stdout().flush().unwrap();
 
         let file_path = Path::new(&file_path);
@@ -73,18 +94,33 @@ fn main() {
             });
     });
     // Clear the line after processing all files
-    print!("\r\x1B[2K");
+    eprint!("\r\x1B[2K");
 
     let sorted_authors = repo_stats.sorted_authors();
     let sorted_file_types_by_author = repo_stats.sorted_file_types_by_author();
 
-    let table = table::TableDisplay::new(
+    let output = output::Output::new(
         repo_path,
         &repo_stats,
         &sorted_authors,
         &sorted_file_types_by_author,
     );
-    println!("{}", table);
+    match args.format {
+        OutputFormat::Table => {
+            let mut table = Table::from(&output);
+            table.with(Style::modern());
+            println!("{}", table);
+        }
+        OutputFormat::Plain => {
+            let mut table = Table::from(&output);
+            table.with(Style::blank());
+            println!("{}", table);
+        }
+        OutputFormat::Json => {
+            let json = serde_json::to_string_pretty(&output).unwrap();
+            println!("{}", json);
+        }
+    };
 }
 
 fn is_binary_file(file_path: &Path) -> Result<bool, std::io::Error> {
